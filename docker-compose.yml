@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: emotional_ai_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    # Mount the .env file explicitly
+    env_file:
+      - .env
+    # Optional: Resource limits depending on Lightning AI tier
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'

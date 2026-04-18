@@ -1,0 +1,21 @@
+# 🔐 Secrets
+.env
+*.env
+
+# 🧠 Python
+__pycache__/
+*.pyc
+
+# 📦 Environments
+venv/
+env/
+
+# 📂 Data (مهم جدًا)
+data/
+archive/
+
+# 📝 Logs
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
