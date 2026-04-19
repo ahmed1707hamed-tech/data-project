@@ -45,7 +45,7 @@ def generate_gemini_response(
         print("🔥 PROMPT:\n", conversation)
 
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-1.5-flash-latest",
             contents=conversation
         )
 
