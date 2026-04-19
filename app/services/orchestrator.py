@@ -38,13 +38,17 @@ def generate_chat_response(
     uid = (user_id or "default").strip() or "default"
 
     try:
-        # ✅ 1. خزّن رسالة المستخدم الأول
+        # ✅ خزّن رسالة المستخدم
         save_message(uid, "user", text)
 
-        # ✅ 2. هات history بعد التحديث
+        # ✅ هات history بعد التحديث
         history = get_last_messages(uid, limit=6)
 
-        # ✅ 3. ابعت لـ Gemini
+        # ✅ نمنع التكرار (مهم)
+        if len(history) > 1 and history[-1].text == history[-2].text:
+            history = history[:-1]
+
+        # ✅ Gemini
         reply = generate_gemini_response(
             text,
             emotion,
@@ -52,14 +56,14 @@ def generate_chat_response(
             history,
         )
 
-        # ✅ fallback لو فاضي
+        # fallback
         if not reply:
             reply = get_fallback("en", emotion)
             ai_type = "fallback"
         else:
             ai_type = "gemini"
 
-        # ✅ 4. خزّن الرد
+        # خزّن الرد
         save_message(uid, "ai", reply)
 
         return {
