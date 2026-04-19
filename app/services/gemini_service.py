@@ -1,3 +1,5 @@
+print("🔥 NEW GEMINI VERSION WORKING")
+
 import re
 from typing import List
 import google.generativeai as genai
@@ -7,6 +9,7 @@ from app.utils.heuristics import get_fallback
 from app.schemas.chat_schema import Message
 from app.services.translator_service import detect_language
 
+# 🔑 init Gemini
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
@@ -24,60 +27,74 @@ def generate_gemini_response(
     try:
         model = genai.GenerativeModel("models/gemini-1.5-flash")
 
-        # 🔥 build conversation
+        # 🔥 build conversation correctly (IMPORTANT FIX)
         conversation = ""
-        for msg in history:
-            if msg["role"] == "ai":
-                conversation += f"Assistant: {msg['text']}\n"
+        recent_history = history[-6:] if history else []
+
+        for msg in recent_history:
+            role = getattr(msg, "role", "")
+            content = getattr(msg, "text", "")
+
+            if role in ["ai", "assistant", "bot", "model"]:
+                conversation += f"Assistant: {content}\n"
             else:
-                conversation += f"User: {msg['text']}\n"
+                conversation += f"User: {content}\n"
 
         # 🔥 prompt قوي جدًا
         full_prompt = f"""
 You are a smart emotional support assistant.
 
-STRICT RULES (must follow):
-- NEVER say: "I'm here for you", "Tell me more", "I understand"
-- NEVER give generic responses
-- ALWAYS give specific, practical advice
-- ALWAYS refer to the conversation context
-- Respond like a real human, not a chatbot
+STRICT RULES:
+- NEVER say "I'm here for you"
+- NEVER say "Tell me more"
+- NEVER give generic answers
+- ALWAYS use conversation context
+- ALWAYS give practical advice
+- Be natural and human-like
 
 Conversation:
 {conversation}
 
-User message:
+User latest message:
 {text}
 
-Now give a helpful, specific response:
+Give a helpful, specific response:
 """
 
-        # 🔥 generation config (مهم جدًا)
+        # 🔥 generate
         response = model.generate_content(
             full_prompt,
             generation_config={
-                "temperature": 0.7,
-                "top_p": 0.9,
+                "temperature": 0.85,
+                "top_p": 0.95,
                 "max_output_tokens": 200,
             }
         )
 
         reply = response.text.strip()
 
-        # 🔥 لو طلع رد generic → نمنعه
+        # 🔥 تنظيف الرد
+        reply = re.sub(r"^\[?reply\]?\s*:?\s*", "", reply, flags=re.IGNORECASE).strip()
+
+        # 🔥 منع الردود الغبية (CRITICAL)
         banned_phrases = [
             "tell me more",
             "i'm here for you",
-            "i understand"
+            "i understand",
+            "i’m here for you"
         ]
 
         if any(p in reply.lower() for p in banned_phrases):
-            return "It sounds like work is really draining you. Try identifying the main source of stress and take small breaks during the day to reset your energy."
+            if "work" in text.lower():
+                return "Work seems to be draining you a lot. Try prioritizing your tasks and taking short breaks — even 10 minutes can help you reset."
+            else:
+                return "It sounds like you're overwhelmed. Try focusing on one small step you can control right now — it can make things feel more manageable."
 
-        # تنظيف الرد
-        reply = re.sub(r"^\[?reply\]?\s*:?\s*", "", reply, flags=re.IGNORECASE).strip()
+        # 🔥 لو الرد ضعيف → نحسنه
+        if len(reply.split()) < 6:
+            return "Try breaking things into smaller steps and focus on one thing at a time — it really helps reduce pressure."
 
-        # fallback لو اللغة غلط
+        # 🔥 لغة
         if detect_language(reply) != lang:
             return get_fallback(lang, emotion)
 
