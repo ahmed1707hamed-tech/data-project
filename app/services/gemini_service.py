@@ -1,16 +1,11 @@
-from google import genai
+import google.generativeai as genai
 import re
 from typing import List, Union
 
 from app.core.config import GEMINI_API_KEY
 from app.schemas.chat_schema import Message
 
-
-print("🔥 GEMINI API KEY:", GEMINI_API_KEY)
-
-client = None
-if GEMINI_API_KEY:
-    client = genai.Client(api_key=GEMINI_API_KEY)
+genai.configure(api_key=GEMINI_API_KEY)
 
 
 def generate_gemini_response(
@@ -21,10 +16,9 @@ def generate_gemini_response(
 ):
 
     try:
-        if not client:
-            print("❌ NO GEMINI CLIENT")
-            return None
+        model = genai.GenerativeModel("gemini-1.5-flash")
 
+        # 🔥 build conversation
         conversation = ""
 
         for msg in history:
@@ -44,23 +38,20 @@ def generate_gemini_response(
 
         print("🔥 PROMPT:\n", conversation)
 
-        response = client.models.generate_content(
-            model="gemini-1.5-flash-latest",
-            contents=conversation
-        )
+        response = model.generate_content(conversation)
 
-        print("🔥 RAW RESPONSE:", response)
+        print("🔥 RESPONSE:", response)
 
-        if not response:
-            print("❌ EMPTY RESPONSE OBJECT")
+        if not response or not response.text:
+            print("❌ EMPTY RESPONSE")
             return None
 
-        if not hasattr(response, "text") or not response.text:
-            print("❌ NO TEXT IN RESPONSE")
-            return None
+        reply = response.text.strip()
 
-        return response.text.strip()
+        reply = re.sub(r"^\[?reply\]?\s*:?\s*", "", reply).strip()
+
+        return reply
 
     except Exception as e:
-        print("❌ GEMINI ERROR:", str(e))
+        print("❌ GEMINI ERROR:", e)
         return None
