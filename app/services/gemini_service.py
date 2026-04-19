@@ -22,7 +22,10 @@ def generate_gemini_response(
         return get_fallback(lang, emotion)
 
     try:
+<<<<<<< HEAD
         # ❌ شيلنا system_instruction خالص
+=======
+>>>>>>> 3bf0182 (fix gemini response)
         model = genai.GenerativeModel("models/gemini-1.5-flash")
 
         # 🔥 نبني conversation قوية

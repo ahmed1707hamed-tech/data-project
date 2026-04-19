@@ -1,17 +1,19 @@
-import socket
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.core.lifespan import lifespan
 from app.api.chat_router import router as chat_router
 
+# 🔥 إنشاء التطبيق
 app = FastAPI(
     title="Emotional AI Chatbot",
-    description="Production-ready bilingual emotion-aware chatbot powered by ONNX + Gemini API.",
-    version="2.1.0",
+    description="Production-ready bilingual emotion-aware chatbot powered by HuggingFace + Gemini API.",
+    version="3.0.0",
     lifespan=lifespan
 )
 
+# 🔥 CORS (عشان frontend بعدين)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,21 +22,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 🔥 Routes
 app.include_router(chat_router)
 
+
+# 🔥 Health Check
 @app.get("/")
 def health_check():
-    return {"status": "ok", "message": "Emotional AI Chatbot running 🚀"}
+    return {
+        "status": "ok",
+        "message": "Emotional AI Chatbot running 🚀"
+    }
 
 
-def find_free_port() -> int:
-    """Bind to port 0 to let the OS assign any available port."""
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(("", 0))
-        return s.getsockname()[1]
-
-
+# 🔥 تشغيل السيرفر (Lightning compatible)
 if __name__ == "__main__":
-    port = find_free_port()
-    print(f"🚀 Starting server on http://localhost:{port}")
-    uvicorn.run("app.main:app", host="0.0.0.0", port=port, reload=True)
+    port = 8080  # ✅ مهم جدًا
+
+    print(f"🚀 Starting server on http://0.0.0.0:{port}")
+
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=port,
+        reload=True
+    )
