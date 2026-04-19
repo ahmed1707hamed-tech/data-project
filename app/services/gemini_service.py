@@ -16,9 +16,8 @@ def generate_gemini_response(
 ):
 
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-pro")
 
-        # 🔥 build conversation
         conversation = ""
 
         for msg in history:
@@ -39,8 +38,6 @@ def generate_gemini_response(
         print("🔥 PROMPT:\n", conversation)
 
         response = model.generate_content(conversation)
-
-        print("🔥 RESPONSE:", response)
 
         if not response or not response.text:
             print("❌ EMPTY RESPONSE")
