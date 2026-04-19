@@ -11,34 +11,6 @@ if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
 
-def _classify_intent(text: str, lang: str) -> str:
-    t = text.lower()
-
-    q_en = ["?", "how", "what", "why", "when", "where", "can you", "help", "advice"]
-    q_ar = ["؟", "كيف", "ماذا", "لماذا", "متى", "أين", "هل", "مساعدة", "نصيحة", "ساعدني"]
-
-    v_en = ["hate", "give up", "tired of", "sick of", "always", "never"]
-    v_ar = ["تعبت", "بكره", "مش طايق", "دايما", "ابدا"]
-
-    if any(m in t for m in (q_ar if lang == "ar" else q_en)):
-        return "question"
-    if any(m in t for m in (v_ar if lang == "ar" else v_en)):
-        return "venting"
-
-    return "statement"
-
-
-def build_system_prompt(detected_emotion: str, language: str, intent: str) -> str:
-    return f"""
-You are a natural human-like conversational assistant.
-
-- Respond ONLY in {language}
-- Be relevant to the user's last message
-- Continue the conversation naturally
-- Do NOT repeat yourself
-"""
-
-
 def generate_gemini_response(
     text: str,
     emotion: str,
@@ -49,30 +21,41 @@ def generate_gemini_response(
     if not GEMINI_API_KEY:
         return get_fallback(lang, emotion)
 
-    intent = _classify_intent(text, lang)
-    language_full = "Arabic" if lang == "ar" else "English"
-    system_instruction = build_system_prompt(emotion, language_full, intent)
-
     try:
-        model = genai.GenerativeModel(
-            "models/gemini-1.5-flash",
-            system_instruction=system_instruction
-        )
+        # ❌ شيلنا system_instruction خالص
+        model = genai.GenerativeModel("models/gemini-1.5-flash")
 
-        # 🔥 هنا السحر الحقيقي (تحويل history لنص واحد)
+        # 🔥 نبني conversation قوية
         conversation = ""
 
         for msg in history:
-            if msg.role.lower() in ["ai", "assistant", "bot", "model"]:
-                conversation += f"Assistant: {msg.text}\n"
+            if msg["role"] == "ai":
+                conversation += f"Assistant: {msg['text']}\n"
             else:
-                conversation += f"User: {msg.text}\n"
+                conversation += f"User: {msg['text']}\n"
 
-        # 🔥 آخر رسالة
-        conversation += f"User: {text}\nAssistant:"
+        # 🔥 Prompt ذكي يخليه يرد صح
+        full_prompt = f"""
+You are a helpful emotional support assistant.
 
-        # 🔥 إرسال كل الحوار مرة واحدة
-        response = model.generate_content(conversation)
+Conversation so far:
+{conversation}
+
+User just said:
+{text}
+
+Your job:
+- Continue the conversation naturally
+- Give helpful advice if user asks
+- Be specific (not generic)
+- Do NOT repeat phrases like "tell me more"
+- Respond like a real human
+
+Answer:
+"""
+
+        # 🔥 إرسال
+        response = model.generate_content(full_prompt)
 
         reply = response.text.strip()
 
