@@ -1,11 +1,9 @@
-import google.generativeai as genai
+import requests
 import re
 from typing import List, Union
 
 from app.core.config import GEMINI_API_KEY
 from app.schemas.chat_schema import Message
-
-genai.configure(api_key=GEMINI_API_KEY)
 
 
 def generate_gemini_response(
@@ -16,8 +14,7 @@ def generate_gemini_response(
 ):
 
     try:
-        model = genai.GenerativeModel("gemini-pro")
-
+        # 🔥 build conversation
         conversation = ""
 
         for msg in history:
@@ -37,13 +34,30 @@ def generate_gemini_response(
 
         print("🔥 PROMPT:\n", conversation)
 
-        response = model.generate_content(conversation)
+        # 🔥 REST API (مهم جدًا)
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key={GEMINI_API_KEY}"
 
-        if not response or not response.text:
-            print("❌ EMPTY RESPONSE")
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": conversation}
+                    ]
+                }
+            ]
+        }
+
+        response = requests.post(url, json=payload)
+
+        print("🔥 RAW:", response.text)
+
+        if response.status_code != 200:
+            print("❌ API ERROR:", response.text)
             return None
 
-        reply = response.text.strip()
+        data = response.json()
+
+        reply = data["candidates"][0]["content"]["parts"][0]["text"]
 
         reply = re.sub(r"^\[?reply\]?\s*:?\s*", "", reply).strip()
 
