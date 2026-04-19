@@ -1,17 +1,9 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
 
-from app.schemas.chat_schema import AnalyzeInput
+from app.schemas.chat_schema import AnalyzeInput, ChatInput
 from app.services.orchestrator import classify_emotion, generate_chat_response
 
 router = APIRouter()
-
-
-# 🔥 Chat request الجديد (بدون history)
-class ChatInput(BaseModel):
-    text: str
-    emotion: str
-    user_id: str  # 🔥 مهم
 
 
 @router.post("/analyze")
@@ -32,9 +24,8 @@ def analyze_endpoint(data: AnalyzeInput):
 @router.post("/chat")
 def chat_endpoint(data: ChatInput):
     """
-    Step 2 — Chatbot with memory per user.
+    Step 2 — Chatbot with persistent per-user memory (SQLite).
     """
-
     if not data.text or not data.text.strip():
         return {
             "message": "Please send a valid message.",
@@ -45,5 +36,5 @@ def chat_endpoint(data: ChatInput):
     return generate_chat_response(
         text=data.text.strip(),
         emotion=data.emotion,
-        user_id=data.user_id  # 🔥 هنا السر
+        user_id=data.user_id,
     )

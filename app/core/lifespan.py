@@ -1,24 +1,22 @@
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+
 from app.core.config import logger, ml_resources
+from app.services.memory_service import init_database
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Simplified lifespan without ONNX model.
-    We now rely on HuggingFace model inside new_model.py
-    """
-
     try:
-        logger.info("🚀 Starting app without ONNX model (using HuggingFace)...")
-        
-        # مفيش تحميل لأي موديل هنا
+        logger.info("Starting app (HF model + SQLite memory)...")
+        init_database()
         yield
 
     except Exception as e:
-        logger.error(f"Startup error: {e}")
+        logger.error("Startup error: %s", e)
         yield
 
     finally:
-        logger.info("🛑 Shutting down app...")
+        logger.info("Shutting down app...")
         ml_resources.clear()
