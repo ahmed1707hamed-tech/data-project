@@ -6,9 +6,12 @@ from app.utils.heuristics import get_fallback
 
 from app.ml.new_model import NextGenModel
 
-# تحميل الموديل مرة واحدة
+# 🔥 تحميل الموديل مرة واحدة
 model = NextGenModel()
 model.load_model()
+
+# 🔥 Memory لكل users
+user_memory = {}
 
 
 def classify_emotion(text: str) -> dict:
@@ -40,11 +43,38 @@ def classify_emotion(text: str) -> dict:
 def generate_chat_response(
     text: str,
     emotion: str,
-    history: List[Message] = []
+    user_id: str = "default"
 ) -> dict:
 
     try:
-        gemini_msg = generate_gemini_response(text, emotion, "en", history)
+        # 🔥 لو user جديد
+        if user_id not in user_memory:
+            user_memory[user_id] = []
+
+        memory = user_memory[user_id]
+
+        # 🔥 أضف رسالة اليوزر
+        memory.append({
+            "role": "user",
+            "text": text
+        })
+
+        # 🔥 ناخد آخر 10 رسائل بس
+        recent_memory = memory[-10:]
+
+        # 🔥 نكلم Gemini بالـ memory
+        gemini_msg = generate_gemini_response(
+            text,
+            emotion,
+            "en",
+            recent_memory
+        )
+
+        # 🔥 أضف رد البوت
+        memory.append({
+            "role": "ai",
+            "text": gemini_msg
+        })
 
         return {
             "message": gemini_msg,
