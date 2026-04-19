@@ -11,11 +11,7 @@ model.load_model()
 
 def classify_emotion(text: str) -> dict:
     try:
-        print("🔥 classify_emotion called")
-
         result = model.predict(text)
-
-        print("🔥 MODEL RESULT:", result)
 
         return {
             "emotion": result["emotion"],
@@ -24,9 +20,7 @@ def classify_emotion(text: str) -> dict:
         }
 
     except Exception as e:
-        import traceback
-        print("🔥 CLASSIFICATION ERROR:")
-        traceback.print_exc()
+        logger.error("Classification error: %s", e)
 
         return {
             "emotion": "error",
@@ -40,23 +34,29 @@ def generate_chat_response(
     emotion: str,
     user_id: str = "default",
 ) -> dict:
+
     uid = (user_id or "default").strip() or "default"
 
     try:
-        save_message(uid, "user", text)
-        recent = get_last_messages(uid, limit=6)
+        # 🔥 1. هات التاريخ الأول (الأهم)
+        history = get_last_messages(uid, limit=6)
 
-        gemini_msg = generate_gemini_response(
+        # 🔥 2. خزّن رسالة المستخدم
+        save_message(uid, "user", text)
+
+        # 🔥 3. ابعت التاريخ + الرسالة الجديدة
+        reply = generate_gemini_response(
             text,
             emotion,
             "en",
-            recent,
+            history,
         )
 
-        save_message(uid, "ai", gemini_msg)
+        # 🔥 4. خزّن رد AI
+        save_message(uid, "ai", reply)
 
         return {
-            "message": gemini_msg,
+            "message": reply,
             "emotion": emotion,
             "ai": "gemini",
         }
