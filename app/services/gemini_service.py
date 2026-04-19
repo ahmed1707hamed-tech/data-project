@@ -17,45 +17,44 @@ def generate_gemini_response(
     history: List[Union[Message, dict]]
 ) -> str:
 
-    model = genai.GenerativeModel("models/gemini-1.5-flash")
+    try:
+        model = genai.GenerativeModel("models/gemini-1.5-flash")
 
-    # 🔥 نبني conversation حقيقي
-    conversation = ""
+        conversation = ""
 
-    for msg in history:
-        if isinstance(msg, dict):
-            role = msg.get("role")
-            content = msg.get("text")
-        else:
-            role = msg.role
-            content = msg.text
+        for msg in history:
+            if isinstance(msg, dict):
+                role = msg.get("role")
+                content = msg.get("text")
+            else:
+                role = msg.role
+                content = msg.text
 
-        if role == "ai":
-            conversation += f"Assistant: {content}\n"
-        else:
-            conversation += f"User: {content}\n"
+            if role == "ai":
+                conversation += f"Assistant: {content}\n"
+            else:
+                conversation += f"User: {content}\n"
 
-    # 🔥 أهم سطر
-    conversation += f"User: {text}\nAssistant:"
+        conversation += f"User: {text}\nAssistant:"
 
-    print("🔥 FULL PROMPT:\n", conversation)
+        print("🔥 PROMPT:\n", conversation)
 
-    # 🔥 بدون system prompt نهائي
-    response = model.generate_content(
-        conversation,
-        generation_config={
-            "temperature": 0.9,
-            "top_p": 0.95,
-            "max_output_tokens": 200,
-        }
-    )
+        response = model.generate_content(conversation)
 
-    reply = response.text.strip()
+        print("🔥 RAW RESPONSE:", response)
 
-    # 🔥 فلترة الرد الغبي
-    if "tell me more" in reply.lower():
-        return "It sounds like something is draining you. Try identifying what exactly is causing the stress and take one small step to reduce it."
+        # 🔥 أهم check
+        if not response or not hasattr(response, "text") or not response.text:
+            print("❌ Gemini returned empty response")
+            return None
 
-    reply = re.sub(r"^\[?reply\]?\s*:?\s*", "", reply, flags=re.IGNORECASE).strip()
+        reply = response.text.strip()
 
-    return reply
+        # تنظيف
+        reply = re.sub(r"^\[?reply\]?\s*:?\s*", "", reply, flags=re.IGNORECASE).strip()
+
+        return reply
+
+    except Exception as e:
+        print("❌ GEMINI ERROR:", str(e))
+        return None
