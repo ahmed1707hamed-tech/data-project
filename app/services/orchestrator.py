@@ -1,5 +1,5 @@
 from app.core.config import logger
-from app.services.gemini_service import generate_gemini_response
+from app.services.groq_service import generate_groq_response
 from app.services.memory_service import get_last_messages, save_message
 from app.utils.heuristics import get_fallback
 
@@ -48,8 +48,8 @@ def generate_chat_response(
         if len(history) > 1 and history[-1].text == history[-2].text:
             history = history[:-1]
 
-        # ✅ Gemini
-        reply = generate_gemini_response(
+        # ✅ Groq response
+        reply = generate_groq_response(
             text,
             emotion,
             "en",
