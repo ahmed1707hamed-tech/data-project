@@ -22,45 +22,57 @@ def generate_gemini_response(
         return get_fallback(lang, emotion)
 
     try:
-<<<<<<< HEAD
-        # ❌ شيلنا system_instruction خالص
-=======
->>>>>>> 3bf0182 (fix gemini response)
         model = genai.GenerativeModel("models/gemini-1.5-flash")
 
-        # 🔥 نبني conversation قوية
+        # 🔥 build conversation
         conversation = ""
-
         for msg in history:
             if msg["role"] == "ai":
                 conversation += f"Assistant: {msg['text']}\n"
             else:
                 conversation += f"User: {msg['text']}\n"
 
-        # 🔥 Prompt ذكي يخليه يرد صح
+        # 🔥 prompt قوي جدًا
         full_prompt = f"""
-You are a helpful emotional support assistant.
+You are a smart emotional support assistant.
 
-Conversation so far:
+STRICT RULES (must follow):
+- NEVER say: "I'm here for you", "Tell me more", "I understand"
+- NEVER give generic responses
+- ALWAYS give specific, practical advice
+- ALWAYS refer to the conversation context
+- Respond like a real human, not a chatbot
+
+Conversation:
 {conversation}
 
-User just said:
+User message:
 {text}
 
-Your job:
-- Continue the conversation naturally
-- Give helpful advice if user asks
-- Be specific (not generic)
-- Do NOT repeat phrases like "tell me more"
-- Respond like a real human
-
-Answer:
+Now give a helpful, specific response:
 """
 
-        # 🔥 إرسال
-        response = model.generate_content(full_prompt)
+        # 🔥 generation config (مهم جدًا)
+        response = model.generate_content(
+            full_prompt,
+            generation_config={
+                "temperature": 0.7,
+                "top_p": 0.9,
+                "max_output_tokens": 200,
+            }
+        )
 
         reply = response.text.strip()
+
+        # 🔥 لو طلع رد generic → نمنعه
+        banned_phrases = [
+            "tell me more",
+            "i'm here for you",
+            "i understand"
+        ]
+
+        if any(p in reply.lower() for p in banned_phrases):
+            return "It sounds like work is really draining you. Try identifying the main source of stress and take small breaks during the day to reset your energy."
 
         # تنظيف الرد
         reply = re.sub(r"^\[?reply\]?\s*:?\s*", "", reply, flags=re.IGNORECASE).strip()
