@@ -2,6 +2,7 @@ from app.core.config import logger
 from app.services.groq_service import generate_groq_response
 from app.services.memory_service import get_last_messages, save_message
 from app.utils.heuristics import get_fallback
+from app.services.response_templates import get_base_response
 
 from app.ml.new_model import NextGenModel
 
@@ -38,32 +39,53 @@ def generate_chat_response(
     uid = (user_id or "default").strip() or "default"
 
     try:
-        # ✅ خزّن رسالة المستخدم
+        # ✅ حفظ رسالة المستخدم
         save_message(uid, "user", text)
 
-        # ✅ هات history بعد التحديث
+        # ✅ history
         history = get_last_messages(uid, limit=6)
 
-        # ✅ نمنع التكرار (مهم)
+        # منع التكرار
         if len(history) > 1 and history[-1].text == history[-2].text:
             history = history[:-1]
 
-        # ✅ Groq response
+        # ===========================
+        # 🔥 LOGIC الجديد
+        # ===========================
+
+        # base response من الداتا
+        base_response = get_base_response(emotion)
+
+        # 👉 إجبار الرد إنجليزي
+        enhanced_text = f"""
+Respond ONLY in English.
+
+User said: "{text}"
+
+Detected emotion: {emotion}
+
+Base response: "{base_response}"
+
+Continue this response naturally in English and provide helpful advice.
+"""
+
+        # Groq
         reply = generate_groq_response(
-            text,
+            enhanced_text,
             emotion,
             "en",
             history,
         )
 
-        # fallback
+        # ===========================
+
         if not reply:
             reply = get_fallback("en", emotion)
             ai_type = "fallback"
         else:
-            ai_type = "gemini"
+            ai_type = "groq"
 
-        # خزّن الرد
+        # حفظ الرد
         save_message(uid, "ai", reply)
 
         return {
