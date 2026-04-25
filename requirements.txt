@@ -9,6 +9,16 @@ deep-translator>=1.11.4
 python-dotenv>=1.0.0
 pydantic>=2.0.0
 requests
+=======
+transformers>=4.30.0
+python-multipart
+speechbrain
+torchaudio
+groq
+librosa
+soundfile
+audioread
+>>>>>>> 5875c76 (server update)
 
 # 🔊 Audio
 librosa
